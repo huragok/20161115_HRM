@@ -56,7 +56,7 @@ ggplot(normalized.melt, aes(x=Temperature, y=Normalized, color=FilenameWellPosit
   geom_line()
 ggsave(paste("all", "_normalized.pdf", sep=""), width=8, height=5)
 
-for (w in normalized.melt$Well.Position) {
+for (w in levels(normalized.melt$Well.Position)) {
   ggplot(normalized.melt[normalized.melt$Well.Position==w,], aes(x=Temperature, y=Normalized, color=Filename)) +
     theme_bw() +
     geom_line()
@@ -70,7 +70,7 @@ ggplot(overlaid, aes(x=Temperature, y=Overlaid)) +
   geom_line()
 ggsave(paste("all", "_overlaid.pdf", sep=""), width=8, height=5)
 
-for (w in normalized.melt$Well.Position) {
+for (w in levels(normalized.melt$Well.Position)) {
   overlaid <- ddply(normalized.melt[normalized.melt$Well.Position==w,], .(Temperature), summarise, Overlaid=mean(Normalized))
   ggplot(overlaid, aes(x=Temperature, y=Overlaid)) +
     theme_bw() +
@@ -93,14 +93,15 @@ ggplot(delta.melt, aes(x=Temperature, y=Delta, color=FilenameWellPosition)) +
   geom_line()
 ggsave(paste("all", "_delta.pdf", sep=""), width=8, height=5)
 
-for (w in normalized.melt$Well.Position) {
-  df.w = df[df$Well.Position==w,]
-  normalized.w <- do.call(cbind.data.frame, lapply(split(df.w,df.w$Filename,sep="-"), normalize))
+for (w in levels(normalized.melt$Well.Position)) {
+  df.w = df.all[df.all$Well.Position==w,]
+  normalized.w <- do.call(cbind.data.frame, lapply(split(df.w,df.w$Filename), normalize))
+  normalized.w$Temperature <- temperature.interpolation
   fluorescence.critical <-unlist(normalized.w[idx.temperature.critical, !(colnames(normalized.w) == "Temperature")])
   which.median <- function(x) which.min(abs(x - median(x)))
   well.ref <- names(which.median(fluorescence.critical))
   
-  delta <- normalized.w;
+  delta <- normalized.w
   delta[, !(colnames(delta) == "Temperature")] <- delta[, !(colnames(delta) == "Temperature")] - delta[, well.ref]
   delta.melt <- melt(delta, id.vars = "Temperature", variable.name = "Filename", 
                      value.name = "Delta")
